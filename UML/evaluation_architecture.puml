@@ -1,0 +1,126 @@
+@startuml
+title BEIR + RAGAS Evaluation CLI Architecture
+
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+
+package "Entry Points" {
+  class EvalCLI <<entrypoint>> {
+    +run() : int
+  }
+}
+
+package "Application" {
+  class EvaluationRunner <<orchestrator>> {
+    -config: EvalConfig
+    -loader: BeirLoader
+    -api_client: RagApiClient
+    -beir_evaluator: BeirEvaluator
+    -ragas_evaluator: RagasEvaluator
+    -report_writer: ReportWriter
+    +execute() : EvalSummary
+  }
+
+  class EvalConfig <<config>> {
+    +dataset_name: str
+    +split: str
+    +endpoint_url: str
+    +top_k: int
+    +concurrency: int
+    +timeout_sec: float
+    +output_dir: str
+  }
+}
+
+package "Domain Models" {
+  class BeirSample <<entity>> {
+    +query_id: str
+    +query: str
+    +gold_doc_ids: list[str]
+  }
+
+  class RetrievedContext <<entity>> {
+    +doc_id: str
+    +text: str
+    +score: float
+  }
+
+  class ApiAnswer <<entity>> {
+    +answer: str
+    +contexts: list[RetrievedContext]
+    +raw: dict
+  }
+
+  class EvalRecord <<entity>> {
+    +query_id: str
+    +user_input: str
+    +reference_context_ids: list[str]
+    +retrieved_context_ids: list[str]
+    +retrieved_contexts: list[str]
+    +response: str
+  }
+
+  class EvalSummary <<entity>> {
+    +beir_metrics: dict
+    +ragas_metrics: dict
+    +record_count: int
+  }
+}
+
+package "Adapters" {
+  class BeirLoader <<adapter>> {
+    +load(config: EvalConfig) : list[BeirSample]
+  }
+
+  class RagApiClient <<adapter>> {
+    +ask(question: str, top_k: int) : ApiAnswer
+  }
+
+  class BeirEvaluator <<service>> {
+    +evaluate(records: list[EvalRecord]) : dict
+  }
+
+  class RagasEvaluator <<service>> {
+    +evaluate(records: list[EvalRecord]) : dict
+    -to_single_turn_samples(records: list[EvalRecord])
+  }
+
+  class ReportWriter <<adapter>> {
+    +write(summary: EvalSummary) : None
+  }
+}
+
+EvalCLI --> EvaluationRunner : starts
+EvaluationRunner --> EvalConfig : uses
+EvaluationRunner --> BeirLoader : loads BEIR samples
+EvaluationRunner --> RagApiClient : sends POST requests
+EvaluationRunner --> BeirEvaluator : computes IR metrics
+EvaluationRunner --> RagasEvaluator : computes RAG metrics
+EvaluationRunner --> ReportWriter : saves outputs
+
+BeirLoader --> BeirSample : returns
+RagApiClient --> ApiAnswer : returns
+ApiAnswer *-- RetrievedContext
+
+EvaluationRunner --> EvalRecord : builds
+BeirEvaluator --> EvalRecord : reads
+RagasEvaluator --> EvalRecord : reads
+ReportWriter --> EvalSummary : persists
+
+EvalRecord --> RetrievedContext : derived from
+EvalSummary --> EvalRecord : aggregates
+
+note right of EvaluationRunner
+Core application service.
+CLI and FastAPI are outside the core logic.
+FastAPI is treated as an external HTTP adapter.
+end note
+
+note bottom of RagApiClient
+Expected response shape:
+- answer: str
+- contexts: [{id, text, score}]
+end note
+
+@enduml
