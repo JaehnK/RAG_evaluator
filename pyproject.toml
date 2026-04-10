@@ -1,0 +1,29 @@
+[project]
+name = "edge-rag-server"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.4.4",
+    "pandas>=3.0.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "ruff>=0.15.10",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle: 공백, 들여쓰기 등 PEP8 스타일
+    "F",   # pyflakes: 미사용 변수/import, 미정의 변수
+    "I",   # isort: import 정렬
+    "B",   # flake8-bugbear: 잠재적 버그 패턴
+    "UP",  # pyupgrade: 구식 문법 → 최신 Python으로
+]
