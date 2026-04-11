@@ -1,20 +1,20 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from pathlib import Path
 
 from src.DomainModels.EvalSummary import EvalSummary
 
 
-@dataclass
 class ReportWriter:
     """
     평가 요약을 파일로 저장하는 어댑터.
     Adapter that writes evaluation summaries to files.
     """
 
-    output_dir: str = "reports"
+    def __init__(self, output_dir: str = "reports") -> None:
+        self.output_dir = output_dir
 
     def _ensure_output_dir(self) -> Path:
         output_path = Path(self.output_dir)
