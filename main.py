@@ -1,5 +1,8 @@
+from src.EvalCLI import run
+
+
 def main():
-    print("Hello from edge-rag-server!")
+    run()
 
 
 if __name__ == "__main__":
