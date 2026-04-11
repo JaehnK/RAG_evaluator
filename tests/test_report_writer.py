@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+"""Tests for ReportWriter output formats."""
+
 import json
 
 from src.Adapters.ReportWriter import ReportWriter

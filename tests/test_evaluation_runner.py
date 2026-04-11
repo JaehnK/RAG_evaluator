@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+"""Tests for EvaluationRunner execution flow."""
+
 from src.Adapters.BeirEvaluator import BeirEvaluator
 from src.Adapters.RagasEvaluator import RagasEvaluator
 from src.Application.EvaluationRunner import EvaluationRunner
