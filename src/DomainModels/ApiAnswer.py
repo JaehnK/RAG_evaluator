@@ -13,3 +13,11 @@ class ApiAnswer:
     answer: str
     contexts: list[RetrievedContext] = field(default_factory=list)
     raw: dict = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        """
+        응답의 기본 구조를 점검한다.
+        Validate the basic shape of the response.
+        """
+        if self.answer is None:
+            raise ValueError("answer must not be None")

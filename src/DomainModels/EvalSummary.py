@@ -11,3 +11,11 @@ class EvalSummary:
     beir_metrics: dict = field(default_factory=dict)
     ragas_metrics: dict = field(default_factory=dict)
     record_count: int = 0
+
+    def __post_init__(self) -> None:
+        """
+        요약 메트릭의 기본 유효성을 점검한다.
+        Validate basic invariants for the summary metrics.
+        """
+        if self.record_count < 0:
+            raise ValueError("record_count must be >= 0")

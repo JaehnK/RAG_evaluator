@@ -11,3 +11,11 @@ class BEIRSample:
     query: str
     positive_doc: str
     negative_doc: str
+
+    def __post_init__(self) -> None:
+        """
+        기본 필드 유효성을 점검한다.
+        Validate basic field invariants.
+        """
+        if not self.query:
+            raise ValueError("query must be non-empty")
