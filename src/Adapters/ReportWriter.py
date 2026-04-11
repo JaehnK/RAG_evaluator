@@ -27,3 +27,48 @@ class ReportWriter:
         with file_path.open("w", encoding="utf-8") as file:
             json.dump(asdict(summary), file, ensure_ascii=False, indent=2)
         return file_path
+
+    def write_markdown(
+        self, summary: EvalSummary, filename: str = "summary.md"
+    ) -> Path:
+        """
+        EvalSummary를 Markdown 파일로 저장한다.
+        Persist EvalSummary to a Markdown file.
+        """
+        output_path = Path(self.output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
+        file_path = output_path / filename
+
+        lines: list[str] = []
+        lines.append("# Evaluation Summary")
+        lines.append("")
+        lines.append("## Summary")
+        lines.append(f"- Records: {summary.record_count}")
+        lines.append("")
+
+        lines.append("## BEIR Metrics")
+        if summary.beir_metrics:
+            lines.append("")
+            lines.append("| Metric | Value |")
+            lines.append("| --- | --- |")
+            for key in sorted(summary.beir_metrics.keys()):
+                value = summary.beir_metrics.get(key)
+                lines.append(f"| {key} | {value} |")
+        else:
+            lines.append("- (none)")
+        lines.append("")
+
+        lines.append("## RAGAS Metrics")
+        if summary.ragas_metrics:
+            lines.append("")
+            lines.append("| Metric | Value |")
+            lines.append("| --- | --- |")
+            for key in sorted(summary.ragas_metrics.keys()):
+                value = summary.ragas_metrics.get(key)
+                lines.append(f"| {key} | {value} |")
+        else:
+            lines.append("- (none)")
+        lines.append("")
+
+        file_path.write_text("\n".join(lines), encoding="utf-8")
+        return file_path
