@@ -24,7 +24,9 @@ class RagApiClient:
         base_url과 endpoint를 결합해 호출 URL을 구성한다.
         Build the full request URL from base_url and endpoint.
         """
-        endpoint = self.endpoint if self.endpoint.startswith("/") else f"/{self.endpoint}"
+        endpoint = (
+            self.endpoint if self.endpoint.startswith("/") else f"/{self.endpoint}"
+        )
         return f"{self.base_url.rstrip('/')}{endpoint}"
 
     @staticmethod
