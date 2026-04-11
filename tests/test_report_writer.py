@@ -9,6 +9,7 @@ from src.DomainModels.EvalSummary import EvalSummary
 
 
 def test_report_writer_writes_json_and_markdown(tmp_path):
+    """Write JSON/Markdown outputs and validate key fields."""
     writer = ReportWriter(output_dir=str(tmp_path))
     summary = EvalSummary(
         beir_metrics={"precision@1": 0.5},

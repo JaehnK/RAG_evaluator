@@ -32,6 +32,7 @@ class _FakeApiClient:
 
 
 def test_evaluation_runner_sync_flow():
+    """Run the sync flow and assert summary basics."""
     runner = EvaluationRunner(
         loader=_FakeLoader(),
         api_client=_FakeApiClient(),
