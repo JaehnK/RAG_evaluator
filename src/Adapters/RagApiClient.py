@@ -6,8 +6,7 @@ import time
 
 import httpx
 
-from src.DomainModels.ApiAnswer import ApiAnswer
-from src.DomainModels.RetrievedContext import RetrievedContext
+from src.DomainModels import ApiAnswer, RetrievedContext
 
 logger = logging.getLogger(__name__)
 

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 
-from src.Adapters.ReportWriter import ReportWriter
-from src.DomainModels.EvalSummary import EvalSummary
+from src.Adapters import ReportWriter
+from src.DomainModels import EvalSummary
 
 
 def test_report_writer_writes_json_and_markdown(tmp_path):

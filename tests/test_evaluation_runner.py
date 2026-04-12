@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-from src.Adapters.BeirEvaluator import BeirEvaluator
-from src.Adapters.RagasEvaluator import RagasEvaluator
-from src.Application.EvaluationRunner import EvaluationRunner
-from src.DomainModels.BEIRSample import BEIRSample
-from src.DomainModels.EvalRecord import EvalRecord
-from src.DomainModels.EvalSummary import EvalSummary
+from src.Adapters import BeirEvaluator, RagasEvaluator
+from src.Application import EvaluationRunner
+from src.DomainModels import BEIRSample, EvalRecord, EvalSummary
 
 
 class _FakeLoader:

@@ -8,7 +8,7 @@ from typing import Any
 
 from beir.datasets.data_loader import GenericDataLoader
 
-from src.DomainModels.BEIRSample import BEIRSample
+from src.DomainModels import BEIRSample
 
 logger = logging.getLogger(__name__)
 

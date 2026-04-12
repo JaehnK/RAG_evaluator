@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import logging
 import time
 
-from src.DomainModels.EvalRecord import EvalRecord
+from src.DomainModels import EvalRecord
 
 logger = logging.getLogger(__name__)
 

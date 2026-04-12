@@ -6,11 +6,8 @@ import json
 from dataclasses import asdict
 from typing import Any
 
-from src.Adapters.BeirEvaluator import BeirEvaluator
-from src.Adapters.BeirLoader import BeirLoader
-from src.Adapters.RagApiClient import RagApiClient
-from src.Adapters.RagasEvaluator import RagasEvaluator
-from src.Application.EvaluationRunner import EvaluationRunner
+from src.Adapters import BeirEvaluator, BeirLoader, RagApiClient, RagasEvaluator
+from src.Application import EvaluationRunner
 
 
 def _build_metrics(metric_names: list[str]) -> list[Any]:
