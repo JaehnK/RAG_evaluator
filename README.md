@@ -29,6 +29,9 @@ uv run main.py \
 ## 아키텍처 / Architecture
 UML 다이어그램: `UML/evaluation_architecture.puml`
 
+### 다이어그램 이미지 / Diagram Image
+![Evaluation Architecture](UML/image.png)
+
 ## 요청/응답 스키마 / Request/Response Schema
 
 이 모듈은 외부 서버로 단일 POST 요청을 보냅니다.
