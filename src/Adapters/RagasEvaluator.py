@@ -7,7 +7,7 @@ from typing import Any
 
 import pandas as pd
 
-from src.DomainModels.EvalRecord import EvalRecord
+from src.DomainModels import EvalRecord
 
 logger = logging.getLogger(__name__)
 

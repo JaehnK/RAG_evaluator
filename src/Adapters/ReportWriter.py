@@ -5,7 +5,7 @@ from dataclasses import asdict
 import logging
 from pathlib import Path
 
-from src.DomainModels.EvalSummary import EvalSummary
+from src.DomainModels import EvalSummary
 
 logger = logging.getLogger(__name__)
 

@@ -6,12 +6,8 @@ import logging
 import time
 from typing import Any
 
-from src.Adapters.BeirEvaluator import BeirEvaluator
-from src.Adapters.BeirLoader import BeirLoader
-from src.Adapters.RagApiClient import RagApiClient
-from src.Adapters.RagasEvaluator import RagasEvaluator
-from src.DomainModels.EvalRecord import EvalRecord
-from src.DomainModels.EvalSummary import EvalSummary
+from src.Adapters import BeirEvaluator, BeirLoader, RagApiClient, RagasEvaluator
+from src.DomainModels import EvalRecord, EvalSummary
 
 logger = logging.getLogger(__name__)
 
