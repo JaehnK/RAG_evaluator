@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict
+import logging
 from pathlib import Path
 
 from src.DomainModels.EvalSummary import EvalSummary
 
+logger = logging.getLogger(__name__)
 
 class ReportWriter:
     """
@@ -30,6 +32,10 @@ class ReportWriter:
         file_path = output_path / filename
         with file_path.open("w", encoding="utf-8") as file:
             json.dump(asdict(summary), file, ensure_ascii=False, indent=2)
+        logger.info(
+            "action=write_report status=ok format=json path=%s",
+            file_path,
+        )
         return file_path
 
     def write_markdown(
@@ -72,4 +78,8 @@ class ReportWriter:
         lines.append("")
 
         file_path.write_text("\n".join(lines), encoding="utf-8")
+        logger.info(
+            "action=write_report status=ok format=markdown path=%s",
+            file_path,
+        )
         return file_path
