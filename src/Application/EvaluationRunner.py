@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
+import logging
+import time
 from typing import Any
 
 from src.Adapters.BeirEvaluator import BeirEvaluator
@@ -11,6 +13,7 @@ from src.Adapters.RagasEvaluator import RagasEvaluator
 from src.DomainModels.EvalRecord import EvalRecord
 from src.DomainModels.EvalSummary import EvalSummary
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class EvaluationRunner:
@@ -78,6 +81,15 @@ class EvaluationRunner:
         BEIR + RAGAS 평가를 실행하고 요약 결과를 반환한다.
         Run BEIR + RAGAS evaluation and return a summary.
         """
+        start = time.perf_counter()
+        logger.info(
+            "action=run_evaluation status=start dataset=%s split=%s use_async=%s concurrency=%s",
+            dataset_name,
+            split,
+            use_async,
+            concurrency,
+        )
+
         samples, _corpus, _queries, _qrels = self.loader.load(
             dataset_name=dataset_name, split=split
         )
@@ -89,6 +101,11 @@ class EvaluationRunner:
         else:
             records = self._build_records_sync(samples, top_k=top_k)
 
+        logger.info(
+            "action=build_records status=ok records=%s",
+            len(records),
+        )
+
         beir_metrics = self.beir_evaluator.evaluate(records)
         ragas_metrics_result: dict[str, float] = {}
         if ragas_metrics:
@@ -96,6 +113,12 @@ class EvaluationRunner:
                 records=records, metrics=ragas_metrics
             )
 
+        elapsed_ms = int((time.perf_counter() - start) * 1000)
+        logger.info(
+            "action=run_evaluation status=ok records=%s elapsed_ms=%s",
+            len(records),
+            elapsed_ms,
+        )
         return EvalSummary(
             beir_metrics=beir_metrics,
             ragas_metrics=ragas_metrics_result,
