@@ -1,6 +1,7 @@
 # Edge RAG Evaluator
 
 BEIR 기반 평가와 RAGAS 점수를 계산하는 CLI 모듈입니다.
+
 CLI module that evaluates BEIR retrieval and computes RAGAS metrics.
 
 ---
