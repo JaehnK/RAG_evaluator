@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
+import time
 from typing import Any
 
 import pandas as pd
 
 from src.DomainModels.EvalRecord import EvalRecord
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class RagasEvaluator:
@@ -49,6 +52,7 @@ class RagasEvaluator:
         """
         if not metrics:
             raise ValueError("metrics must be provided for RAGAS evaluation")
+        start = time.perf_counter()
 
         try:
             from ragas import evaluate as ragas_evaluate
@@ -58,4 +62,12 @@ class RagasEvaluator:
         dataset = self.build_dataset(records)
         result = ragas_evaluate(dataset=dataset, metrics=metrics)
         df = result.to_pandas()
-        return pd.to_numeric(df, errors="coerce").mean(numeric_only=True).to_dict()
+        summary = pd.to_numeric(df, errors="coerce").mean(numeric_only=True).to_dict()
+        elapsed_ms = int((time.perf_counter() - start) * 1000)
+        logger.info(
+            "action=eval_ragas status=ok records=%s metrics=%s elapsed_ms=%s",
+            len(records),
+            len(metrics),
+            elapsed_ms,
+        )
+        return summary
