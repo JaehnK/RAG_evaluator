@@ -10,6 +10,7 @@ CLI module that evaluates BEIR retrieval and computes RAGAS metrics.
 - 응답을 기반으로 BEIR / RAGAS 평가를 실행합니다.
 - 결과를 JSON/Markdown으로 저장할 수 있습니다.
 
+
 - Sends questions to an external server via POST.
 - Runs BEIR / RAGAS evaluation from the responses.
 - Persists results as JSON/Markdown.
@@ -42,9 +43,12 @@ UML 다이어그램: `UML/evaluation_architecture.puml`
 ## 요청/응답 스키마 / Request/Response Schema
 
 이 모듈은 외부 서버로 단일 POST 요청을 보냅니다.
+
 The module sends a single POST request to an external server.
 
+
 서버는 아래 형식의 요청 본문을 받고, 동일한 스키마로 응답해야 합니다.
+
 The server should accept the request body and return a response in the format below.
 
 ### Request (JSON)
