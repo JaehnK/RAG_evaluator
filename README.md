@@ -2,20 +2,21 @@
 
 BEIR 기반 평가와 RAGAS 점수를 계산하는 CLI 모듈입니다.
 CLI module that evaluates BEIR retrieval and computes RAGAS metrics.
-
+---
 ## 개요 / Overview
-- 외부 서버(예: C++ 서비스)에 질문을 POST로 전송합니다.
+- 외부 서버에 질문을 POST로 전송합니다.
 - 응답을 기반으로 BEIR / RAGAS 평가를 실행합니다.
 - 결과를 JSON/Markdown으로 저장할 수 있습니다.
+
 - Sends questions to an external server via POST.
 - Runs BEIR / RAGAS evaluation from the responses.
 - Persists results as JSON/Markdown.
-
+---
 ## 설치 / Installation
 ```bash
 uv sync
 ```
-
+---
 ## 사용법 / Usage
 ```bash
 uv run main.py \
@@ -25,13 +26,13 @@ uv run main.py \
   --ragas-metric Faithfulness \
   --ragas-metric ResponseRelevancy
 ```
-
+---
 ## 아키텍처 / Architecture
 UML 다이어그램: `UML/evaluation_architecture.puml`
-
+---
 ### 다이어그램 이미지 / Diagram Image
 ![Evaluation Architecture](UML/image.png)
-
+---
 ## 요청/응답 스키마 / Request/Response Schema
 
 이 모듈은 외부 서버로 단일 POST 요청을 보냅니다.
