@@ -1,11 +1,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
+import time
 
 import httpx
 
 from src.DomainModels.ApiAnswer import ApiAnswer
 from src.DomainModels.RetrievedContext import RetrievedContext
+
+logger = logging.getLogger(__name__)
+
+
+def _truncate(text: str, limit: int = 200) -> str:
+    if len(text) <= limit:
+        return text
+    return f"{text[:limit]}..."
 
 
 @dataclass
@@ -58,10 +68,27 @@ class RagApiClient:
         payload = {"question": question}
         if top_k is not None:
             payload["top_k"] = top_k
+        start = time.perf_counter()
         with httpx.Client(timeout=self.timeout_sec) as client:
-            response = client.post(self._build_url(), json=payload)
-            response.raise_for_status()
-            return self._parse_answer(response.json())
+            try:
+                response = client.post(self._build_url(), json=payload)
+                response.raise_for_status()
+                answer = self._parse_answer(response.json())
+                elapsed_ms = int((time.perf_counter() - start) * 1000)
+                logger.info(
+                    "action=ask status=ok elapsed_ms=%s query=%s",
+                    elapsed_ms,
+                    _truncate(question),
+                )
+                return answer
+            except Exception:
+                elapsed_ms = int((time.perf_counter() - start) * 1000)
+                logger.exception(
+                    "action=ask status=error elapsed_ms=%s query=%s",
+                    elapsed_ms,
+                    _truncate(question),
+                )
+                raise
 
     async def ask_async(self, question: str, top_k: int | None = None) -> ApiAnswer:
         """
@@ -71,7 +98,24 @@ class RagApiClient:
         payload = {"question": question}
         if top_k is not None:
             payload["top_k"] = top_k
+        start = time.perf_counter()
         async with httpx.AsyncClient(timeout=self.timeout_sec) as client:
-            response = await client.post(self._build_url(), json=payload)
-            response.raise_for_status()
-            return self._parse_answer(response.json())
+            try:
+                response = await client.post(self._build_url(), json=payload)
+                response.raise_for_status()
+                answer = self._parse_answer(response.json())
+                elapsed_ms = int((time.perf_counter() - start) * 1000)
+                logger.info(
+                    "action=ask_async status=ok elapsed_ms=%s query=%s",
+                    elapsed_ms,
+                    _truncate(question),
+                )
+                return answer
+            except Exception:
+                elapsed_ms = int((time.perf_counter() - start) * 1000)
+                logger.exception(
+                    "action=ask_async status=error elapsed_ms=%s query=%s",
+                    elapsed_ms,
+                    _truncate(question),
+                )
+                raise

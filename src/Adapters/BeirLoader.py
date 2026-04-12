@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
+import time
 from pathlib import Path
 from typing import Any
 
@@ -8,6 +10,7 @@ from beir.datasets.data_loader import GenericDataLoader
 
 from src.DomainModels.BEIRSample import BEIRSample
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class BeirLoader:
@@ -32,6 +35,7 @@ class BeirLoader:
         BEIR 데이터를 로드하고 질의 단위 샘플을 생성한다.
         Load BEIR data and build query-level samples.
         """
+        start = time.perf_counter()
         data_folder = Path(self.data_dir) / dataset_name
         loader = GenericDataLoader(data_folder=str(data_folder))
         corpus, queries, qrels = loader.load(split=split)
@@ -52,4 +56,12 @@ class BeirLoader:
                 )
             )
 
+        elapsed_ms = int((time.perf_counter() - start) * 1000)
+        logger.info(
+            "action=load_beir status=ok dataset=%s split=%s samples=%s elapsed_ms=%s",
+            dataset_name,
+            split,
+            len(samples),
+            elapsed_ms,
+        )
         return samples, corpus, queries, qrels

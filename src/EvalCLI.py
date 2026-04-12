@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import json
 from dataclasses import asdict
 from typing import Any
@@ -59,6 +60,10 @@ def _parse_args() -> argparse.Namespace:
 
 
 def run() -> int:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    )
     args = _parse_args()
 
     loader = BeirLoader()

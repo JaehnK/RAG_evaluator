@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
+import time
 
 from src.DomainModels.EvalRecord import EvalRecord
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class BeirEvaluator:
@@ -21,6 +24,7 @@ class BeirEvaluator:
         EvalRecord 리스트로부터 precision/recall@k를 계산한다.
         Compute precision/recall@k from EvalRecord list.
         """
+        start = time.perf_counter()
         metrics: dict[str, float] = {}
         if not records:
             for k in k_values:
@@ -56,4 +60,11 @@ class BeirEvaluator:
             metrics[f"precision@{k}"] = precision_sum / len(records)
             metrics[f"recall@{k}"] = recall_sum / len(records)
 
+        elapsed_ms = int((time.perf_counter() - start) * 1000)
+        logger.info(
+            "action=eval_beir status=ok records=%s k_values=%s elapsed_ms=%s",
+            len(records),
+            k_values,
+            elapsed_ms,
+        )
         return metrics
