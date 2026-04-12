@@ -31,6 +31,33 @@ uv run main.py \
   --ragas-metric Faithfulness \
   --ragas-metric ResponseRelevancy
 ```
+
+---
+## GitHub Actions Automation
+- `CI and Deploy`: `push`/`pull_request`마다 테스트를 실행하고, `master`/`main` push 시 VM에 최신 코드를 반영합니다.
+- `Run Evaluation`: GitHub Actions의 `workflow_dispatch` 버튼으로 평가를 수동 실행합니다.
+
+### GitHub Secrets
+- `VM_HOST`: Compute Engine external IP or hostname
+- `VM_USER`: SSH login user
+- `VM_SSH_KEY`: private key for a deploy key that can SSH into the VM
+
+### GitHub Variables
+- `VM_APP_DIR`: optional, defaults to `/home/<VM_USER>/edge_rag_server`
+- `VM_SSH_PORT`: optional, defaults to `22`
+
+### VM Setup
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/github_actions_vm -C "github-actions"
+cat ~/.ssh/github_actions_vm.pub >> ~/.ssh/authorized_keys
+git clone <YOUR_GITHUB_REPO_URL> ~/edge_rag_server
+cd ~/edge_rag_server
+~/.local/bin/uv sync --frozen
+```
+
+Save the contents of `~/.ssh/github_actions_vm` as the GitHub secret `VM_SSH_KEY`.
+
+After that, code deployment is automatic on `push`, while evaluation remains a manual GitHub Actions run.
 ---
 ## 아키텍처 / Architecture
 UML 다이어그램: `UML/evaluation_architecture.puml`

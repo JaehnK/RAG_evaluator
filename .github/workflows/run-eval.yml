@@ -1,0 +1,124 @@
+name: Run Evaluation
+
+on:
+  workflow_dispatch:
+    inputs:
+      dataset:
+        description: "BEIR dataset name"
+        required: true
+        default: "scifact"
+        type: string
+      base_url:
+        description: "RAG API base URL"
+        required: true
+        default: "http://127.0.0.1:8000"
+        type: string
+      split:
+        description: "BEIR split"
+        required: true
+        default: "test"
+        type: string
+      top_k:
+        description: "Top-k contexts"
+        required: false
+        default: "5"
+        type: string
+      use_async:
+        description: "Use async HTTP requests"
+        required: true
+        default: true
+        type: boolean
+      concurrency:
+        description: "Concurrency for async mode"
+        required: true
+        default: "8"
+        type: string
+      ragas_metrics:
+        description: "Comma-separated ragas metric names"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  run-eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Validate evaluation settings
+        env:
+          VM_APP_DIR: ${{ vars.VM_APP_DIR }}
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_SSH_KEY: ${{ secrets.VM_SSH_KEY }}
+          VM_SSH_PORT: ${{ vars.VM_SSH_PORT }}
+          VM_USER: ${{ secrets.VM_USER }}
+        run: |
+          set -euo pipefail
+          VM_APP_DIR="${VM_APP_DIR:-/home/$VM_USER/edge_rag_server}"
+          VM_SSH_PORT="${VM_SSH_PORT:-22}"
+          test -n "$VM_HOST" || { echo "Missing GitHub secret: VM_HOST"; exit 1; }
+          test -n "$VM_USER" || { echo "Missing GitHub secret: VM_USER"; exit 1; }
+          test -n "$VM_SSH_KEY" || { echo "Missing GitHub secret: VM_SSH_KEY"; exit 1; }
+          test -n "$VM_APP_DIR" || { echo "Unable to determine VM_APP_DIR"; exit 1; }
+          test -n "$VM_SSH_PORT" || { echo "Unable to determine VM_SSH_PORT"; exit 1; }
+
+      - name: Configure SSH
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_SSH_KEY: ${{ secrets.VM_SSH_KEY }}
+          VM_SSH_PORT: ${{ vars.VM_SSH_PORT }}
+        run: |
+          set -euo pipefail
+          VM_SSH_PORT="${VM_SSH_PORT:-22}"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VM_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p "$VM_SSH_PORT" -H "$VM_HOST" >> ~/.ssh/known_hosts
+
+      - name: Run evaluation on VM
+        env:
+          BASE_URL: ${{ inputs.base_url }}
+          CONCURRENCY: ${{ inputs.concurrency }}
+          DATASET: ${{ inputs.dataset }}
+          RAGAS_METRICS: ${{ inputs.ragas_metrics }}
+          SPLIT: ${{ inputs.split }}
+          TOP_K: ${{ inputs.top_k }}
+          USE_ASYNC: ${{ inputs.use_async }}
+          VM_APP_DIR: ${{ vars.VM_APP_DIR }}
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_SSH_PORT: ${{ vars.VM_SSH_PORT }}
+          VM_USER: ${{ secrets.VM_USER }}
+        run: |
+          set -euo pipefail
+          VM_APP_DIR="${VM_APP_DIR:-/home/$VM_USER/edge_rag_server}"
+          VM_SSH_PORT="${VM_SSH_PORT:-22}"
+          args=(main.py --dataset "$DATASET" --base-url "$BASE_URL" --split "$SPLIT" --concurrency "$CONCURRENCY")
+
+          if [ -n "$TOP_K" ]; then
+            args+=(--top-k "$TOP_K")
+          fi
+
+          if [ "$USE_ASYNC" = "true" ]; then
+            args+=(--async)
+          fi
+
+          if [ -n "$RAGAS_METRICS" ]; then
+            IFS=',' read -r -a metrics <<< "$RAGAS_METRICS"
+            for metric in "${metrics[@]}"; do
+              metric="${metric#"${metric%%[![:space:]]*}"}"
+              metric="${metric%"${metric##*[![:space:]]}"}"
+              if [ -n "$metric" ]; then
+                args+=(--ragas-metric "$metric")
+              fi
+            done
+          fi
+
+          printf -v escaped_args ' %q' "${args[@]}"
+
+          ssh -p "$VM_SSH_PORT" "$VM_USER@$VM_HOST" "
+            set -euo pipefail
+            cd '$VM_APP_DIR'
+            ~/.local/bin/uv run${escaped_args}
+          "

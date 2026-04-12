@@ -1,0 +1,105 @@
+name: CI and Deploy
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+    branches:
+      - master
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install dependencies
+        run: uv sync --frozen --group dev
+
+      - name: Run tests
+        run: uv run pytest
+
+  deploy-vm:
+    name: Deploy to VM
+    if: github.event_name == 'push'
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate deployment settings
+        env:
+          VM_APP_DIR: ${{ vars.VM_APP_DIR }}
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_SSH_KEY: ${{ secrets.VM_SSH_KEY }}
+          VM_SSH_PORT: ${{ vars.VM_SSH_PORT }}
+          VM_USER: ${{ secrets.VM_USER }}
+        run: |
+          set -euo pipefail
+          VM_APP_DIR="${VM_APP_DIR:-/home/$VM_USER/edge_rag_server}"
+          VM_SSH_PORT="${VM_SSH_PORT:-22}"
+          test -n "$VM_HOST" || { echo "Missing GitHub secret: VM_HOST"; exit 1; }
+          test -n "$VM_USER" || { echo "Missing GitHub secret: VM_USER"; exit 1; }
+          test -n "$VM_SSH_KEY" || { echo "Missing GitHub secret: VM_SSH_KEY"; exit 1; }
+          test -n "$VM_APP_DIR" || { echo "Unable to determine VM_APP_DIR"; exit 1; }
+          test -n "$VM_SSH_PORT" || { echo "Unable to determine VM_SSH_PORT"; exit 1; }
+
+      - name: Configure SSH
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_SSH_KEY: ${{ secrets.VM_SSH_KEY }}
+          VM_SSH_PORT: ${{ vars.VM_SSH_PORT }}
+        run: |
+          set -euo pipefail
+          VM_SSH_PORT="${VM_SSH_PORT:-22}"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VM_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p "$VM_SSH_PORT" -H "$VM_HOST" >> ~/.ssh/known_hosts
+
+      - name: Update code on VM
+        env:
+          REMOTE_BRANCH: ${{ github.ref_name }}
+          VM_APP_DIR: ${{ vars.VM_APP_DIR }}
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_SSH_PORT: ${{ vars.VM_SSH_PORT }}
+          VM_USER: ${{ secrets.VM_USER }}
+        run: |
+          set -euo pipefail
+          VM_APP_DIR="${VM_APP_DIR:-/home/$VM_USER/edge_rag_server}"
+          VM_SSH_PORT="${VM_SSH_PORT:-22}"
+          ssh -p "$VM_SSH_PORT" "$VM_USER@$VM_HOST" "
+            set -euo pipefail
+            cd '$VM_APP_DIR'
+
+            if [ -n \"\$(git status --porcelain)\" ]; then
+              echo 'Remote worktree is dirty. Clean or commit changes on the VM first.'
+              exit 1
+            fi
+
+            git fetch origin '$REMOTE_BRANCH'
+
+            if git show-ref --verify --quiet 'refs/heads/$REMOTE_BRANCH'; then
+              git checkout '$REMOTE_BRANCH'
+            else
+              git checkout -b '$REMOTE_BRANCH' --track 'origin/$REMOTE_BRANCH'
+            fi
+
+            git pull --ff-only origin '$REMOTE_BRANCH'
+            \$HOME/.local/bin/uv sync --frozen
+          "
