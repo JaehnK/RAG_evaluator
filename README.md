@@ -27,7 +27,7 @@ uv sync
 uv run main.py \
   --dataset scifact \
   --base-url http://localhost:8000 \
-  --top-k 5 \
+  --advanced hyde \
   --ragas-metric Faithfulness \
   --ragas-metric ResponseRelevancy
 ```
@@ -74,28 +74,39 @@ UML 다이어그램: `UML/evaluation_architecture.puml`
 The module sends a single POST request to an external server.
 
 
-서버는 아래 형식의 요청 본문을 받고, 동일한 스키마로 응답해야 합니다.
+서버는 아래 요청을 받아 내부 RAG IO 계약으로 변환하고, 단일 실행 응답을 반환해야 합니다.
+기존 `{ "answer": ..., "contexts": ... }` 응답도 하위 호환으로 읽습니다.
 
-The server should accept the request body and return a response in the format below.
+The server should convert this request into the internal RAG IO contract and return
+a single-run response. The legacy `{ "answer": ..., "contexts": ... }` response is
+still accepted.
 
 ### Request (JSON)
 ```json
 {
   "question": "string",
-  "top_k": 5
+  "dataset": "scifact",
+  "split": "test",
+  "sample_id": "query-id",
+  "advanced": "hyde"
 }
 ```
 
 ### Response (JSON)
 ```json
 {
+  "status": "ok",
+  "mode": "naive_rag",
   "answer": "string",
-  "contexts": [
+  "retrieved_contexts": [
     {
-      "id": "doc_id",
+      "rank": 1,
+      "doc_id": "doc_id",
+      "chunk_id": 42,
       "text": "context chunk",
       "score": 0.91
     }
-  ]
+  ],
+  "trace": {}
 }
 ```

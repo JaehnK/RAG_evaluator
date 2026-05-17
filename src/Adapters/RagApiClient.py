@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import logging
 import time
+from dataclasses import dataclass
 
 import httpx
 
@@ -39,16 +39,43 @@ class RagApiClient:
         return f"{self.base_url.rstrip('/')}{endpoint}"
 
     @staticmethod
+    def _build_payload(
+        question: str,
+        dataset: str | None = None,
+        split: str | None = None,
+        sample_id: str | None = None,
+        advanced: str | None = None,
+    ) -> dict:
+        payload = {
+            "question": question,
+            "dataset": dataset,
+            "split": split,
+            "sample_id": sample_id,
+        }
+        if advanced:
+            payload["advanced"] = advanced
+        return payload
+
+    @staticmethod
     def _parse_answer(payload: dict) -> ApiAnswer:
         """
         API 응답 JSON을 ApiAnswer로 변환한다.
         Convert the API JSON payload into ApiAnswer.
         """
+        if payload.get("status") == "error":
+            error = payload.get("error") or {}
+            message = error.get("message") or "RAG API returned error status"
+            raise RuntimeError(str(message))
+
         contexts = []
-        for ctx in payload.get("contexts", []) or []:
+        raw_contexts = payload.get("retrieved_contexts")
+        if raw_contexts is None:
+            raw_contexts = payload.get("contexts", [])
+
+        for ctx in raw_contexts or []:
             contexts.append(
                 RetrievedContext(
-                    doc_id=str(ctx.get("id", "")),
+                    doc_id=str(ctx.get("doc_id") or ctx.get("id", "")),
                     text=str(ctx.get("text", "")),
                     score=float(ctx.get("score", 0.0)),
                 )
@@ -59,14 +86,25 @@ class RagApiClient:
             raw=payload,
         )
 
-    def ask(self, question: str, top_k: int | None = None) -> ApiAnswer:
+    def ask(
+        self,
+        question: str,
+        dataset: str | None = None,
+        split: str | None = None,
+        sample_id: str | None = None,
+        advanced: str | None = None,
+    ) -> ApiAnswer:
         """
         동기 방식으로 질문을 보내고 응답을 반환한다.
         Send a question synchronously and return the response.
         """
-        payload = {"question": question}
-        if top_k is not None:
-            payload["top_k"] = top_k
+        payload = self._build_payload(
+            question=question,
+            dataset=dataset,
+            split=split,
+            sample_id=sample_id,
+            advanced=advanced,
+        )
         start = time.perf_counter()
         with httpx.Client(timeout=self.timeout_sec) as client:
             try:
@@ -89,14 +127,25 @@ class RagApiClient:
                 )
                 raise
 
-    async def ask_async(self, question: str, top_k: int | None = None) -> ApiAnswer:
+    async def ask_async(
+        self,
+        question: str,
+        dataset: str | None = None,
+        split: str | None = None,
+        sample_id: str | None = None,
+        advanced: str | None = None,
+    ) -> ApiAnswer:
         """
         비동기 방식으로 질문을 보내고 응답을 반환한다.
         Send a question asynchronously and return the response.
         """
-        payload = {"question": question}
-        if top_k is not None:
-            payload["top_k"] = top_k
+        payload = self._build_payload(
+            question=question,
+            dataset=dataset,
+            split=split,
+            sample_id=sample_id,
+            advanced=advanced,
+        )
         start = time.perf_counter()
         async with httpx.AsyncClient(timeout=self.timeout_sec) as client:
             try:

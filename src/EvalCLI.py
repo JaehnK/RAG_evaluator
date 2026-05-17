@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import argparse
-import logging
 import json
+import logging
 from dataclasses import asdict
 from typing import Any
 
@@ -33,7 +33,11 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--dataset", required=True, help="BEIR dataset name")
     parser.add_argument("--split", default="test", help="BEIR split (default: test)")
     parser.add_argument("--base-url", required=True, help="FastAPI base URL")
-    parser.add_argument("--top-k", type=int, default=None, help="Top-k contexts")
+    parser.add_argument(
+        "--advanced",
+        default=None,
+        help="Advanced RAG method name to send to the server",
+    )
     parser.add_argument(
         "--async",
         dest="use_async",
@@ -79,10 +83,10 @@ def run() -> int:
     summary = runner.execute(
         dataset_name=args.dataset,
         split=args.split,
-        top_k=args.top_k,
         ragas_metrics=metrics,
         use_async=args.use_async,
         concurrency=args.concurrency,
+        advanced=args.advanced,
     )
 
     print(json.dumps(asdict(summary), ensure_ascii=False, indent=2))

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
 import logging
 import time
+from dataclasses import dataclass
 from typing import Any
 
 from src.Adapters import BeirEvaluator, BeirLoader, RagApiClient, RagasEvaluator
@@ -26,14 +26,22 @@ class EvaluationRunner:
     async def _build_records_async(
         self,
         samples: list,
-        top_k: int | None,
         concurrency: int,
+        dataset_name: str,
+        split: str,
+        advanced: str | None,
     ) -> list[EvalRecord]:
         semaphore = asyncio.Semaphore(concurrency)
 
         async def _one(sample) -> EvalRecord:
             async with semaphore:
-                answer = await self.api_client.ask_async(sample.query, top_k=top_k)
+                answer = await self.api_client.ask_async(
+                    sample.query,
+                    dataset=dataset_name,
+                    split=split,
+                    sample_id=sample.query_id,
+                    advanced=advanced,
+                )
             return EvalRecord(
                 query_id=sample.query_id,
                 user_input=sample.query,
@@ -47,11 +55,21 @@ class EvaluationRunner:
         return await asyncio.gather(*tasks)
 
     def _build_records_sync(
-        self, samples: list, top_k: int | None
+        self,
+        samples: list,
+        dataset_name: str,
+        split: str,
+        advanced: str | None,
     ) -> list[EvalRecord]:
         records: list[EvalRecord] = []
         for sample in samples:
-            answer = self.api_client.ask(sample.query, top_k=top_k)
+            answer = self.api_client.ask(
+                sample.query,
+                dataset=dataset_name,
+                split=split,
+                sample_id=sample.query_id,
+                advanced=advanced,
+            )
             records.append(
                 EvalRecord(
                     query_id=sample.query_id,
@@ -68,10 +86,10 @@ class EvaluationRunner:
         self,
         dataset_name: str,
         split: str = "test",
-        top_k: int | None = None,
         ragas_metrics: list[Any] | None = None,
         use_async: bool = False,
         concurrency: int = 8,
+        advanced: str | None = None,
     ) -> EvalSummary:
         """
         BEIR + RAGAS 평가를 실행하고 요약 결과를 반환한다.
@@ -79,7 +97,8 @@ class EvaluationRunner:
         """
         start = time.perf_counter()
         logger.info(
-            "action=run_evaluation status=start dataset=%s split=%s use_async=%s concurrency=%s",
+            "action=run_evaluation status=start dataset=%s split=%s "
+            "use_async=%s concurrency=%s",
             dataset_name,
             split,
             use_async,
@@ -92,10 +111,21 @@ class EvaluationRunner:
 
         if use_async:
             records = asyncio.run(
-                self._build_records_async(samples, top_k=top_k, concurrency=concurrency)
+                self._build_records_async(
+                    samples,
+                    concurrency=concurrency,
+                    dataset_name=dataset_name,
+                    split=split,
+                    advanced=advanced,
+                )
             )
         else:
-            records = self._build_records_sync(samples, top_k=top_k)
+            records = self._build_records_sync(
+                samples,
+                dataset_name=dataset_name,
+                split=split,
+                advanced=advanced,
+            )
 
         logger.info(
             "action=build_records status=ok records=%s",

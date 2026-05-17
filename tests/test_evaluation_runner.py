@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from src.Adapters import BeirEvaluator, RagasEvaluator
 from src.Application import EvaluationRunner
-from src.DomainModels import BEIRSample, EvalRecord, EvalSummary
+from src.DomainModels import BEIRSample, EvalSummary
 
 
 class _FakeLoader:
@@ -12,7 +12,12 @@ class _FakeLoader:
 
 
 class _FakeApiClient:
-    def ask(self, question: str, top_k=None):
+    def __init__(self):
+        self.last_kwargs = None
+
+    def ask(self, question: str, **kwargs):
+        self.last_kwargs = kwargs
+
         class _Ctx:
             def __init__(self):
                 self.doc_id = "d1"
@@ -28,14 +33,19 @@ class _FakeApiClient:
 
 def test_evaluation_runner_sync_flow():
     """Run the sync flow and assert summary basics."""
+    api_client = _FakeApiClient()
     runner = EvaluationRunner(
         loader=_FakeLoader(),
-        api_client=_FakeApiClient(),
+        api_client=api_client,
         beir_evaluator=BeirEvaluator(),
         ragas_evaluator=RagasEvaluator(),
     )
 
-    summary = runner.execute(dataset_name="dummy", use_async=False)
+    summary = runner.execute(dataset_name="dummy", use_async=False, advanced="hyde")
     assert isinstance(summary, EvalSummary)
     assert summary.record_count == 1
     assert "precision@1" in summary.beir_metrics
+    assert api_client.last_kwargs["dataset"] == "dummy"
+    assert api_client.last_kwargs["split"] == "test"
+    assert api_client.last_kwargs["sample_id"] == "q1"
+    assert api_client.last_kwargs["advanced"] == "hyde"
